@@ -1,0 +1,121 @@
+nix-pc  master !4 via 🐍 v3.12.9 NixOS took 2m5s 
+❯ cat /etc/bashrc
+# /etc/bashrc: DO NOT EDIT -- this file has been generated automatically.
+
+# Only execute this file once per shell.
+if [ -n "$__ETC_BASHRC_SOURCED" ] || [ -n "$NOSYSBASHRC" ]; then return; fi
+__ETC_BASHRC_SOURCED=1
+
+# If the profile was not loaded in a parent process, source
+# it.  But otherwise don't do it because we don't want to
+# clobber overridden values of $PATH, etc.
+if [ -z "$__ETC_PROFILE_DONE" ]; then
+    . /etc/profile
+fi
+
+# We are not always an interactive shell.
+if [ -n "$PS1" ]; then
+    # Manual starship init
+eval "$(/nix/store/vr9l1x8kfzsll4qr20iljpm1nv6xprfh-starship-1.22.1/bin/starship init bash)"
+[[ -f /etc/bashrc ]] && source /etc/bashrc
+
+
+# This function is called whenever a command is not found.
+command_not_found_handle() {
+  local p='/nix/store/symm04523nsc4rixb4sn6qll67r072fr-command-not-found/bin/command-not-found'
+  if [ -x "$p" ] && [ -f '/nix/var/nix/profiles/per-user/root/channels/nixos/programs.sqlite' ]; then
+    # Run the helper program.
+    "$p" "$@"
+    # Retry the command if we just installed it.
+    if [ $? = 126 ]; then
+      "$@"
+    else
+      return 127
+    fi
+  else
+    echo "$1: command not found" >&2
+    return 127
+  fi
+}
+
+# Check the window size after every command.
+shopt -s checkwinsize
+
+# Disable hashing (i.e. caching) of command lookups.
+set +h
+
+if [[ $TERM != "dumb" ]]; then
+  # don't set STARSHIP_CONFIG automatically if there's a user-specified
+  # config file.  starship appears to use a hardcoded config location
+  # rather than one inside an XDG folder:
+  # https://github.com/starship/starship/blob/686bda1706e5b409129e6694639477a0f8a3f01b/src/configure.rs#L651
+  if [[ ! -f "$HOME/.config/starship.toml" ]]; then
+    export STARSHIP_CONFIG=/nix/store/2zf8wji9krl12jkszzi6xif8r9b4mnw2-starship.toml
+  fi
+  eval "$(/nix/store/vr9l1x8kfzsll4qr20iljpm1nv6xprfh-starship-1.22.1/bin/starship init bash)"
+fi
+
+eval "$(/nix/store/fr9yr63a1267cr0r86w18c77mh3xavcc-coreutils-9.6/bin/dircolors -b)"
+
+# Check whether we're running a version of Bash that has support for
+# programmable completion. If we do, enable all modules installed in
+# the system and user profile in obsolete /etc/bash_completion.d/
+# directories. Bash loads completions in all
+# $XDG_DATA_DIRS/bash-completion/completions/
+# on demand, so they do not need to be sourced here.
+if shopt -q progcomp &>/dev/null; then
+  . "/nix/store/r40zqmfxlvwbg6ap6dn96p3ycqn3yccn-bash-completion-2.16.0/etc/profile.d/bash_completion.sh"
+  nullglobStatus=$(shopt -p nullglob)
+  shopt -s nullglob
+  for p in $NIX_PROFILES; do
+    for m in "$p/etc/bash_completion.d/"*; do
+      . "$m"
+    done
+  done
+  eval "$nullglobStatus"
+  unset nullglobStatus p m
+fi
+
+alias -- l='ls -alh'
+alias -- ll='ls -l'
+alias -- ls='ls --color=tty'
+
+
+
+fi
+
+# Read system-wide modifications.
+if test -f /etc/bashrc.local; then
+    . /etc/bashrc.local
+fi
+
+nix-pc  master !4 via 🐍 v3.12.9 NixOS 
+❯ bash
+
+\[\]nix-pc\[\] \[\] master\[\] \[\]!4\[\] via \[\]🐍 v3.12.9 \[\]NixOS\[\] 
+\[\]❯\[\] exit
+
+nix-pc  master !4 via 🐍 v3.12.9 NixOS 
+❯ sudo usermod -s /bin/bash ryzengrind
+
+nix-pc  master !4 via 🐍 v3.12.9 NixOS 
+❯ bash
+
+\[\]nix-pc\[\] \[\] master\[\] \[\]!4\[\] via \[\]🐍 v3.12.9 \[\]NixOS\[\] 
+\[\]❯\[\] exit
+
+nix-pc  master !4 via 🐍 v3.12.9 NixOS 
+❯ cat configuration.nix | grep -A 5 interactiveShellInit
+      interactiveShellInit = ''
+      # Manual starship init for fish
+      ${pkgs.starship}/bin/starship init fish | source
+      '';
+    };
+    nix-ld = {
+--
+      interactiveShellInit = ''
+      # Manual starship init
+      eval "$(${pkgs.starship}/bin/starship init bash)"
+      [[ -f /etc/bashrc ]] && source /etc/bashrc
+    '';
+    };
