@@ -99,10 +99,6 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [
-            overlays.default  # Use local binding instead of self-reference
-            overlays.unstable
-          ];
           config = {
             allowUnfree = true;
             cudaSupport = system == "x86_64-linux" || system == "aarch64-linux";
@@ -128,11 +124,7 @@
           nixpkgs-fmt
           nil
           nix-output-monitor
-
-          # Home Manager
-          inputs.home-manager.packages.${system}.default
-
-          # Shell tools
+          home-manager.packages.${system}.default
           starship
           bash
           bash-completion
@@ -141,7 +133,6 @@
           zoxide
           direnv
         ];
-
         shellHook = builtins.readFile ./scripts/bin/devShellHook.sh;
       }
     );
