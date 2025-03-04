@@ -107,33 +107,35 @@
           };
         };
       in
-      pkgs.mkShell {
-        name = "nix-config-dev-shell";
-        nativeBuildInputs = with pkgs; [
-          # Formatters and linters
-          alejandra
-          deadnix
-          statix
-          nodePackages.prettier
+      {
+        default = pkgs.mkShell {
+          name = "nix-config-dev-shell";
+          nativeBuildInputs = with pkgs; [
+            # Formatters and linters
+            alejandra
+            deadnix
+            statix
+            nodePackages.prettier
 
-          # Git and pre-commit
-          git
-          pre-commit
+            # Git and pre-commit
+            git
+            pre-commit
 
-          # Nix tools
-          nixpkgs-fmt
-          nil
-          nix-output-monitor
-          home-manager.packages.${system}.default
-          starship
-          bash
-          bash-completion
-          bash-preexec
-          fzf
-          zoxide
-          direnv
-        ];
-        shellHook = builtins.readFile ./scripts/bin/devShellHook.sh;
+            # Nix tools
+            nixpkgs-fmt
+            nil
+            nix-output-monitor
+            home-manager.packages.${system}.default
+            starship
+            bashInteractive
+            bash-completion
+            bash-preexec
+            fzf
+            zoxide
+            direnv
+          ];
+          shellHook = builtins.readFile ./scripts/bin/devShellHook.sh;
+        };
       }
     );
 

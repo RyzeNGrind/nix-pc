@@ -41,18 +41,13 @@
       ];
     };
     bash = {
+      package = pkgs.bashInteractive;
       enable = true;
       completion.enable = true;
       
       interactiveShellInit = ''
         # Initialize starship first
         eval "$(${pkgs.starship}/bin/starship init bash)"
-        
-        # Then set up readline bindings
-        if [[ $- == *i* ]]; then
-          bind '"\e[A": history-search-backward'
-          bind '"\e[B": history-search-forward'
-        fi
       '';
     };
     starship = {
