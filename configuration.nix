@@ -5,13 +5,13 @@
 # NixOS-WSL specific options are documented on the NixOS-WSL repository:
 # https://github.com/nix-community/NixOS-WSL
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 {
   imports = [
-    # include NixOS-WSL modules
-    #<nixos-wsl/modules>
+    nixos-wsl.nixosModules.wsl
   ];
+
   nix.settings = { 
     trusted-users = [ "root" "@wheel" ];
     experimental-features = [ "auto-allocate-uids" "ca-derivations" "cgroups" "dynamic-derivations" "fetch-closure" "fetch-tree" "flakes" "git-hashing" "local-overlay-store" "mounted-ssh-store" "no-url-literals" "pipe-operators" "nix-command" "recursive-nix"]; 
@@ -20,6 +20,7 @@
     allowUnfree = true;
     allowBroken = true;
   };
+
   programs = {
     fish = {
       enable = true;
@@ -31,26 +32,42 @@
     nix-ld = {
       enable = true;
       libraries = with pkgs; [
-              stdenv.cc.cc
-              zlib
-              openssl
-              libunwind
-              icu
-              libuuid
+            #  stdenv.cc.cc
+            #  zlib
+            #  openssl
+            #  libunwind
+            #  icu
+            #  libuuid
       ];
     };
     bash = {
+      enable = true;
       completion.enable = true;
+      
       interactiveShellInit = ''
-      # Manual starship init
-      eval "$(${pkgs.starship}/bin/starship init bash)"
-      [[ -f /etc/bashrc ]] && source /etc/bashrc
-    '';
+        # Initialize starship first
+        eval "$(${pkgs.starship}/bin/starship init bash)"
+        
+        # Then set up readline bindings
+        if [[ $- == *i* ]]; then
+          bind '"\e[A": history-search-backward'
+          bind '"\e[B": history-search-forward'
+        fi
+      '';
     };
     starship = {
       enable = true;
-      # Set explicit config path
-      settings = {};
+      settings = {
+        add_newline = true;
+        command_timeout = 5000;
+        character = {
+          error_symbol = "[❯](bold red)";
+          success_symbol = "[❯](bold green)";
+          vicmd_symbol = "[❮](bold blue)";
+        };
+        # Add explicit format wrapping
+        format = """$all\ $character""";
+      };
     };
   };
   environment = {
@@ -59,6 +76,10 @@
     };
     pathsToLink = ["/share/bash-completion"];
     systemPackages = with pkgs; [
+      readline
+      bashInteractive  # Replace regular bash
+      bash-completion  # Better completion support
+      ncurses          # Terminfo database
       wsl-vpnkit
       wget
       jq
@@ -92,7 +113,6 @@
     startMenuLaunchers = true;
     docker-desktop.enable = false;
   };
-  
 #  systemd.services.wsl-vpnkit = {
 #    enable = true;
 #    description = "wsl-vpnkit";
