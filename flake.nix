@@ -157,6 +157,10 @@
           nixos-wsl = inputs.nixos-wsl;
         };
         modules = [
+          ({ config, lib, ... }: {
+            _module.check = true;
+            _module.freeformType = null;
+          })
           ./configuration.nix
         ];
       };

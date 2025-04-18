@@ -21,6 +21,10 @@
     allowBroken = true;
   };
 
+  _module.args = {
+    inherit inputs;
+  };
+
   programs = {
     fish = {
       enable = true;
