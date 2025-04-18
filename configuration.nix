@@ -12,18 +12,30 @@
     nixos-wsl.nixosModules.wsl
   ];
 
+  # Set up proper nixpkgs configuration with overlays
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      allowBroken = true;
+    };
+    overlays = [
+      # Use the unstable overlay from inputs
+      (final: prev: {
+        unstable = import inputs.nixpkgs-unstable {
+          system = final.system;
+          config.allowUnfree = true;
+        };
+      })
+    ];
+  };
+
   nix.settings = { 
     trusted-users = [ "root" "@wheel" ];
     experimental-features = [ "auto-allocate-uids" "ca-derivations" "cgroups" "dynamic-derivations" "fetch-closure" "fetch-tree" "flakes" "git-hashing" "local-overlay-store" "mounted-ssh-store" "no-url-literals" "pipe-operators" "nix-command" "recursive-nix"]; 
   };
-  nixpkgs.config = {
-    allowUnfree = true;
-    allowBroken = true;
-  };
 
-  _module.args = {
-    inherit inputs;
-  };
+  # Disable documentation options that might cause infinite recursion
+  documentation.nixos.includeAllModules = false;
 
   programs = {
     fish = {
@@ -45,10 +57,7 @@
       ];
     };
     bash = {
-      package = pkgs.bashInteractive;
-      enable = true;
       completion.enable = true;
-      
       interactiveShellInit = ''
         # Initialize starship first
         eval "$(${pkgs.starship}/bin/starship init bash)"
@@ -65,7 +74,7 @@
           vicmd_symbol = "[❮](bold blue)";
         };
         # Add explicit format wrapping
-        format = """$all\ $character""";
+        format = "$all $character";
       };
     };
   };

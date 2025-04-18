@@ -36,17 +36,16 @@
     # For packages that can build on any system
     allSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystems = nixpkgs.lib.genAttrs allSystems;
-    # Add this new overlay to make unstable packages available
-    overlayUnstable = _: prev: {
-      unstable = import nixpkgs-unstable {
-        inherit (prev) system;
-        config.allowUnfree = true;
-      };
-    };
     
+    # Define overlays
     overlays = {
       default = import ./overlays/default-bash.nix;
-      unstable = overlayUnstable;
+      unstable = final: prev: {
+        unstable = import nixpkgs-unstable {
+          inherit (prev) system;
+          config.allowUnfree = true;
+        };
+      };
     };
   in {
     inherit overlays;
@@ -142,25 +141,13 @@
     nixosConfigurations = {
       nix-pc = let
         system = "x86_64-linux";
-        pkgs = import nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-          overlays = [
-            overlays.default
-            overlays.unstable
-          ];
-        };
       in nixpkgs.lib.nixosSystem {
-        inherit system pkgs;
+        inherit system;
         specialArgs = {
           inherit inputs;
           nixos-wsl = inputs.nixos-wsl;
         };
         modules = [
-          ({ config, lib, ... }: {
-            _module.check = true;
-            _module.freeformType = null;
-          })
           ./configuration.nix
         ];
       };
