@@ -140,20 +140,10 @@
     );
 
     nixosConfigurations = {
-      nix-pc = let
-        basePkgs = import nixpkgs {
-          system = "x86_64-linux";
-          overlays = [
-            overlays.default  # Use local binding instead of self-reference
-            overlays.unstable
-          ];
-          config.allowUnfree = true;
-        };
-      in basePkgs.lib.nixosSystem {
+      nix-pc = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
           inherit inputs;
-          pkgs = basePkgs;
         };
         modules = [
           ./configuration.nix
