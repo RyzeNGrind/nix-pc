@@ -144,6 +144,7 @@
         system = "x86_64-linux";
         specialArgs = {
           inherit inputs;
+          nixos-wsl = inputs.nixos-wsl;
         };
         modules = [
           ./configuration.nix
