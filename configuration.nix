@@ -16,15 +16,9 @@
     trusted-users = [ "root" "@wheel" ];
     experimental-features = [ "auto-allocate-uids" "ca-derivations" "cgroups" "dynamic-derivations" "fetch-closure" "fetch-tree" "flakes" "git-hashing" "local-overlay-store" "mounted-ssh-store" "no-url-literals" "pipe-operators" "nix-command" "recursive-nix"]; 
   };
-  nixpkgs = {
-    config = {
-      allowUnfree = true;
-      allowBroken = true;
-    };
-    overlays = [
-      inputs.self.overlays.default
-      inputs.self.overlays.unstable
-    ];
+  nixpkgs.config = {
+    allowUnfree = true;
+    allowBroken = true;
   };
 
   programs = {

@@ -140,8 +140,18 @@
     );
 
     nixosConfigurations = {
-      nix-pc = nixpkgs.lib.nixosSystem {
+      nix-pc = let
         system = "x86_64-linux";
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          overlays = [
+            overlays.default
+            overlays.unstable
+          ];
+        };
+      in nixpkgs.lib.nixosSystem {
+        inherit system pkgs;
         specialArgs = {
           inherit inputs;
           nixos-wsl = inputs.nixos-wsl;
