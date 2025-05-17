@@ -120,6 +120,7 @@
     imports = [ ./home-ryzengrind.nix ]; # Path to the dedicated Home Manager config
     # Optionally, pass pkgs, config, lib, etc., if home-ryzengrind.nix needs them directly
     # pkgs = pkgs; # Example
+    extraSpecialArgs = { inherit inputs; }; # Pass flake inputs to Home Manager modules
   };
 
   wsl = {
