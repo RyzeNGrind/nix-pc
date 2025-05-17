@@ -34,12 +34,20 @@
     nixos-hardware.url = "github:nixos/nixos-hardware";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, pre-commit-hooks, nixos-wsl, home-manager, ... } @ inputs: let
+  outputs = {
+    self,
+    nixpkgs,
+    nixpkgs-unstable,
+    pre-commit-hooks,
+    nixos-wsl,
+    home-manager,
+    ...
+  } @ inputs: let
     # Only build for Linux systems
     # For packages that can build on any system
     allSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystems = nixpkgs.lib.genAttrs allSystems;
-    
+
     # Define overlays
     overlays = {
       default = import ./overlays/default-bash.nix;
@@ -97,8 +105,8 @@
     });
 
     # Your custom packages and modifications
-    devShells = forAllSystems (system:
-      let
+    devShells = forAllSystems (
+      system: let
         pkgs = import nixpkgs {
           inherit system;
           config = {
@@ -108,8 +116,7 @@
             experimental-features = ["nix-command" "flakes" "repl-flake" "recursive-nix" "fetch-closure" "dynamic-derivations" "daemon-trust-override" "cgroups" "ca-derivations" "auto-allocate-uids" "impure-derivations"];
           };
         };
-      in
-      {
+      in {
         default = pkgs.mkShell {
           name = "nix-config-dev-shell";
           nativeBuildInputs = with pkgs; [
@@ -144,18 +151,19 @@
     nixosConfigurations = {
       nix-pc = let
         system = "x86_64-linux";
-      in nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = {
-          inherit inputs;
-          nixos-wsl = inputs.nixos-wsl;
-          home-manager = inputs.home-manager; # Pass home-manager
-          opnix = inputs.opnix;             # Pass opnix
+      in
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit inputs;
+            nixos-wsl = inputs.nixos-wsl;
+            home-manager = inputs.home-manager; # Pass home-manager
+            opnix = inputs.opnix; # Pass opnix
+          };
+          modules = [
+            ./configuration.nix
+          ];
         };
-        modules = [
-          ./configuration.nix
-        ];
-      };
     };
   };
 }
