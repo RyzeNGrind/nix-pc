@@ -19,10 +19,11 @@
   # You can add a simple package to test if Home Manager is working at all
   # home.packages = [ pkgs.hello ];
 
-  # We'll install 1Password if it's not already installed via NixOS configuration
+  # We'll install 1Password and tools required for SSH agent bridge
   home.packages = with pkgs; [
     _1password-cli
     _1password-gui-beta
+    socat
   ];
 
   # 1Password integration with correct module structure
@@ -32,12 +33,34 @@
     secrets = [
       {
         path = ".ssh/id_ed25519";
-        reference = "op://yttl77unixirazurjzbjjqpfoy/minj427njw4gall6in2vittq4q/private key";
+        reference = "op://yttl77unixirazurjzbjjqpfoy/mlqzzezynzl2pfvfte4vdp7sn4/private_key";
       }
     ];
   };
   
   # 1Password handles SSH agent functionality, no separate ssh-agent needed
+  
+  # Enable the 1Password SSH agent bridge service
+  systemd.user.services."1password-ssh-agent-bridge" = {
+    Unit = {
+      Description = "1Password SSH Agent Bridge for WSL";
+      Documentation = "https://nixos.wiki/wiki/1Password";
+      After = "network.target";
+      # Restart when WSL resumes from sleep
+      PartOf = "graphical-session.target";
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${config.home.homeDirectory}/nix-cfg/scripts/setup-1password-ssh-bridge.sh";
+      Restart = "always";
+      RestartSec = 5;
+      # Load environment from profile if it exists
+      Environment = "PATH=${config.home.profileDirectory}/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
 
   # Configure SSH client properly to work with 1Password SSH agent
   programs.ssh = {
@@ -47,7 +70,7 @@
     controlMaster = "auto";
     controlPersist = "10m";
     
-    # Configure 1Password SSH agent integration
+    # Configure 1Password SSH agent integration (standard approach from NixOS Wiki)
     extraConfig = ''
       Host *
           IdentityAgent ~/.1password/agent.sock
