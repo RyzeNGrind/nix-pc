@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, ... }: # inputs is available from specialArgs in flake.nix -> configuration.nix -> here
+{ config, pkgs, lib, flakeInputs, ... }: # flakeInputs is available from extraSpecialArgs
 
 let
   # Define the 1Password item path for your nix-ws SSH key.
@@ -15,7 +15,7 @@ let
 in
 {
   imports = [
-    inputs.opnix.homeManagerModules.default # Import opnix Home Manager module
+    flakeInputs.opnix.homeManagerModules.default # Import opnix Home Manager module using flakeInputs
   ];
 
   # Basic Home Manager settings
