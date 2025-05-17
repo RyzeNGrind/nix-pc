@@ -25,14 +25,17 @@
       url = "github:nix-community/nix-ld";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # 1Password integration
+    opnix = {
+      url = "github:brizzbuzz/opnix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Hardware configuration
     nixos-hardware.url = "github:nixos/nixos-hardware";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, pre-commit-hooks, nixos-wsl, home-manager, ... } @ inputs: let
-    inherit (self) outputs;
     # Only build for Linux systems
-    linuxSystems = ["x86_64-linux" "aarch64-linux"];
     # For packages that can build on any system
     allSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystems = nixpkgs.lib.genAttrs allSystems;
@@ -146,6 +149,8 @@
         specialArgs = {
           inherit inputs;
           nixos-wsl = inputs.nixos-wsl;
+          home-manager = inputs.home-manager; # Pass home-manager
+          opnix = inputs.opnix;             # Pass opnix
         };
         modules = [
           ./configuration.nix

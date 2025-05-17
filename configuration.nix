@@ -10,6 +10,7 @@
 {
   imports = [
     nixos-wsl.nixosModules.wsl
+    inputs.home-manager.nixosModules.home-manager # Import Home Manager NixOS module
   ];
 
   # Set up proper nixpkgs configuration with overlays
@@ -99,6 +100,7 @@
       gcc
       python3
       nodejs
+      procps  # Added to resolve 'ps' dependency
       zlib
     ];
   };  
@@ -112,6 +114,12 @@
     isNormalUser = true;
     shell = pkgs.fish;
     extraGroups = [ "audio" "docker" "kvm" "libvirt" "libvirtd" "networkmanager" "podman" "qemu-libvirtd" "users" "video" "wheel" ];
+  };
+
+  home-manager.users.ryzengrind = {
+    imports = [ ./home-ryzengrind.nix ]; # Path to the dedicated Home Manager config
+    # Optionally, pass pkgs, config, lib, etc., if home-ryzengrind.nix needs them directly
+    # pkgs = pkgs; # Example
   };
 
   wsl = {

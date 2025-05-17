@@ -1,4 +1,4 @@
 # overlays/default-bash.nix
-final: prev: {
+prev: {
   bash = prev.bashInteractive;
 }
