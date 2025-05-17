@@ -29,7 +29,21 @@ echo "$TOKEN" > "$TOKEN_FILE"
 
 echo "Setting permissions..."
 chmod 640 "$TOKEN_FILE"
-chown root:$USER "$TOKEN_FILE"
 
-echo "Token file created and configured with proper permissions."
+# Check if the user group exists
+if getent group "$USER" >/dev/null 2>&1; then
+  echo "Setting ownership to root:$USER..."
+  chown root:"$USER" "$TOKEN_FILE"
+else
+  echo "Group $USER does not exist. Setting ownership to root only..."
+  chown root: "$TOKEN_FILE"
+  
+  echo "WARNING: The token file is only accessible by root."
+  echo "You might need to create a specific group for opnix access:"
+  echo "  sudo groupadd onepassword-secrets"
+  echo "  sudo usermod -aG onepassword-secrets $USER"
+  echo "  sudo chown root:onepassword-secrets $TOKEN_FILE"
+fi
+
+echo "Token file created and configured with permissions."
 echo "Now you can run: sudo nixos-rebuild switch --flake /home/$USER/nix-pc#nix-pc"
