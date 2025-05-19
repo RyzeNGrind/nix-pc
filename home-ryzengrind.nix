@@ -20,6 +20,7 @@
   # home.packages = [ pkgs.hello ];
 
   # We'll install 1Password and tools required for SSH agent bridge
+  home.sessionVariables.SSH_AUTH_SOCK = "/home/ryzengrind/.1password/agent.sock";
   home.packages = with pkgs; [
     _1password-cli
     _1password-gui-beta
