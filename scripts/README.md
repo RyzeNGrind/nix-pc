@@ -29,12 +29,14 @@ sudo ./opnix-setup.sh <1password-token> --rebuild
 ```
 
 This script will:
+
 - Create the 1Password token file
 - Set up the security group
 - Configure proper permissions
 - Optionally rebuild the NixOS configuration
 
 Run with `--help` for more options:
+
 ```bash
 sudo ./opnix-setup.sh --help
 ```
@@ -49,6 +51,7 @@ sudo ./setup-opnix-token.sh <1password-token>
 ```
 
 You can generate a token in the 1Password desktop app:
+
 1. Go to Settings > Developer
 2. Click 'Create New Token'
 3. Give it a name like 'NixOS opnix integration'
@@ -64,6 +67,7 @@ sudo ./setup-opnix-group.sh
 ```
 
 This script will:
+
 - Create the `onepassword-secrets` group
 - Add the user to this group
 - Set proper permissions on the token file
@@ -78,6 +82,7 @@ Tests SSH connection to the remote host using 1Password SSH agent.
 ```
 
 This script will:
+
 - Verify that 1Password SSH agent socket exists
 - Check available SSH keys in the agent
 - Test SSH connection to the remote host with verbose output
@@ -93,6 +98,7 @@ ssh ryzengrind@192.168.1.3 'bash -s' < ./temp_opnix_fix.sh
 ```
 
 This script will:
+
 - Check for and configure SSH public keys
 - Set proper permissions for SSH files
 - Verify SSH server configuration
@@ -126,7 +132,7 @@ inputs = {
     tokenFile = "/etc/opnix-token";  # Default location
     outputDir = "/var/lib/opnix/secrets";  # Optional, this is the default
   };
-  
+
   # Create the onepassword-secrets group
   users.groups.onepassword-secrets = {};
 }
@@ -141,7 +147,7 @@ inputs = {
   imports = [
     flakeInputs.opnix.homeManagerModules.default
   ];
-  
+
   # 1Password integration with correct module structure
   programs.onepassword-secrets = {
     enable = true;
@@ -153,21 +159,21 @@ inputs = {
       }
     ];
   };
-  
+
   # Configure SSH client properly to work with 1Password SSH agent
   programs.ssh = {
     enable = true;
-    
+
     # Basic SSH client configuration
     controlMaster = "auto";
     controlPersist = "10m";
-    
+
     # Configure 1Password SSH agent integration
     extraConfig = ''
       Host *
           IdentityAgent ~/.1password/agent.sock
     '';
-    
+
     # Ensure we match the remote host
     matchBlocks = {
       "nix-ws" = {
@@ -216,6 +222,7 @@ ssh ryzengrind@192.168.1.3 'bash -s' < ./temp_opnix_fix.sh
 ### 1. Token File Permissions
 
 If you see errors like `Error: Cannot read system token at /etc/opnix-token`:
+
 - Ensure the token file exists
 - Run the `setup-opnix-group.sh` script to set up proper permissions
 - Make sure your user is in the `onepassword-secrets` group
@@ -224,6 +231,7 @@ If you see errors like `Error: Cannot read system token at /etc/opnix-token`:
 ### 2. SSH Agent Socket Issues
 
 If the 1Password SSH agent socket is not found:
+
 - Check that 1Password SSH agent is running on Windows host
 - Verify the Windows 1Password agent is properly integrated with WSL
 - The socket path should be `~/.1password/agent.sock`
@@ -231,6 +239,7 @@ If the 1Password SSH agent socket is not found:
 ### 3. Authentication Failures
 
 If you see "Permission denied" errors:
+
 - Run `ssh-add -l` to check if the SSH agent recognizes any keys
 - Use `ssh -v nix-ws` for verbose connection debugging output
 - Check authorized_keys on the remote host has proper permissions

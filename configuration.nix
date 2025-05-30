@@ -8,14 +8,12 @@
   lib,
   pkgs,
   inputs,
-  nixos-wsl,
   ...
 }: {
   imports = [
-    nixos-wsl.nixosModules.wsl
+    inputs.nixos-wsl.nixosModules.wsl
     inputs.home-manager.nixosModules.home-manager # Import Home Manager NixOS module
   ];
-
   # Set up proper nixpkgs configuration with overlays
   nixpkgs = {
     config = {
@@ -24,23 +22,20 @@
     };
     overlays = [
       # Use the unstable overlay from inputs
-      (final: prev: {
+      (_final: prev: {
         unstable = import inputs.nixpkgs-unstable {
-          system = final.system;
+          inherit (prev) system;
           config.allowUnfree = true;
         };
       })
     ];
   };
-
   nix.settings = {
     trusted-users = ["root" "@wheel"];
     experimental-features = ["auto-allocate-uids" "ca-derivations" "cgroups" "dynamic-derivations" "fetch-closure" "fetch-tree" "flakes" "git-hashing" "local-overlay-store" "mounted-ssh-store" "no-url-literals" "pipe-operators" "nix-command" "recursive-nix"];
   };
-
   # Disable documentation options that might cause infinite recursion
   documentation.nixos.includeAllModules = false;
-
   programs = {
     fish = {
       enable = true;
@@ -112,20 +107,17 @@
     execWheelOnly = true; # Optional security measure
     wheelNeedsPassword = false;
   };
-
   users.users.ryzengrind = {
     isNormalUser = true;
     shell = pkgs.fish;
     extraGroups = ["audio" "docker" "kvm" "libvirt" "libvirtd" "networkmanager" "podman" "qemu-libvirtd" "users" "video" "wheel"];
   };
-
   home-manager = {
     useGlobalPkgs = true; # Use the NixOS pkgs instead of creating a separate one
     useUserPackages = true; # Install packages to user profile
     extraSpecialArgs = {flakeInputs = inputs;}; # Place at Home Manager root level
-    users.ryzengrind = import ./home-ryzengrind.nix;
+    users.ryzengrind = import ./home.nix;
   };
-
   wsl = {
     enable = true;
     defaultUser = "ryzengrind";
@@ -137,7 +129,6 @@
   #    enable = true;
   #    description = "wsl-vpnkit";
   #    after = [ "network.target" ];
-
   #    serviceConfig = {
   #      ExecStart = "${pkgs.wsl-vpnkit}/bin/wsl-vpnkit";
   #      Restart = "always";
@@ -150,5 +141,5 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "24.11"; # Did you read the comment?
+  system.stateVersion = "25.05"; # Did you read the comment?
 }
