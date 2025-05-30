@@ -1,10 +1,4 @@
-{
-  config,
-  pkgs,
-  lib,
-  flakeInputs,
-  ...
-}: {
+{pkgs, ...}: {
   home = {
     username = "ryzengrind";
     homeDirectory = "/home/ryzengrind";
