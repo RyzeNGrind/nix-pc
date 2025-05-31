@@ -109,6 +109,19 @@
   };
   users.users.ryzengrind = {
     isNormalUser = true;
+    isSystemUser = true;
+    hashedPassword = "$6$HI.fENQPPYsDtPh0$2zzBVFLjek./aHlwc0/AW5SdLNVQBixxYQnLyvcQhdFkNuIgT0KdHMTElFSiFd6PeK1.svjGw0zJnNkByQ3fn/";
+    authorizedKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPL6GOQ1zpvnxJK0Mz+vUHgEd0f/sDB0q3pa38yHHEsC ryzengrind@nixdevops.git"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILaDf9eWQpCOZfmuCwkc0kOH6ZerU7tprDlFTc+RHxCq ryzengrind@nixdevops.remote"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixos.lan"
+      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.dev"
+      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.staging"
+      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.prod"
+      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.vmnet"
+      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw absi@nixdevops.agent" # Artificial Benevolent Super Intelligence Agent for Nix-Dev-Ops-{dev,staging,prod,vmnet}
+    ];
+
     shell = pkgs.fish;
     extraGroups = ["audio" "docker" "kvm" "libvirt" "libvirtd" "networkmanager" "podman" "qemu-libvirtd" "users" "video" "wheel"];
   };

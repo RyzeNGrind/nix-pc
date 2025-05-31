@@ -61,7 +61,7 @@
             statix
             nodePackages.prettier
             # Git and pre-commit
-            git
+            git gh
             nixpkgs-fmt
             nil
             nix-output-monitor
