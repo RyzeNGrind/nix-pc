@@ -1,3 +1,6 @@
 venv/
 result
 .pre-commit-config.yaml
+*.log
+result*
+*diff*.md

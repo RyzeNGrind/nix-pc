@@ -8,11 +8,16 @@
   pkgs,
   #lib,
   inputs,
+  opnix,
+  nixos-wsl,
   ...
 }: {
   imports = [
-    inputs.nixos-wsl.nixosModules.wsl
-    inputs.home-manager.nixosModules.home-manager # Import Home Manager NixOS module
+    # inputs.nix-cfg.nixosModules.common-config # Temporarily commented out for debugging due to nix-cfg input removal
+    opnix.nixosModules.default # Import opnix module directly
+    nixos-wsl.nixosModules.default # Explicitly enable WSL module
+    # Add more shared modules as needed
+    # inputs.home-manager.nixosModules.home-manager # Temporarily commented out for debugging
   ];
   # Set up proper nixpkgs configuration with overlays
   nixpkgs = {
@@ -100,6 +105,7 @@
       nodejs
       procps # Added to resolve 'ps' dependency
       zlib
+      linuxPackages.usbip
     ];
   };
   security.sudo = {
@@ -109,32 +115,29 @@
   };
   users.users.ryzengrind = {
     isNormalUser = true;
-    isSystemUser = true;
+    isSystemUser = false;
     hashedPassword = "$6$HI.fENQPPYsDtPh0$2zzBVFLjek./aHlwc0/AW5SdLNVQBixxYQnLyvcQhdFkNuIgT0KdHMTElFSiFd6PeK1.svjGw0zJnNkByQ3fn/";
-    authorizedKeys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPL6GOQ1zpvnxJK0Mz+vUHgEd0f/sDB0q3pa38yHHEsC ryzengrind@nixdevops.git"
+    openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILaDf9eWQpCOZfmuCwkc0kOH6ZerU7tprDlFTc+RHxCq ryzengrind@nixdevops.remote"
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixos.lan"
-      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.dev"
-      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.staging"
-      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.prod"
-      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw ryzengrind@nixdevops.vmnet"
-      #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAitSzTpub1baCfA94ja3DNZpxd74kDSZ8RMLDwOZEOw absi@nixdevops.agent" # Artificial Benevolent Super Intelligence Agent for Nix-Dev-Ops-{dev,staging,prod,vmnet}
+      # You can add other authorized keys here if needed, or manage them via Opnix if it exports a list of keys.
     ];
-
     shell = pkgs.fish;
     extraGroups = ["audio" "docker" "kvm" "libvirt" "libvirtd" "networkmanager" "podman" "qemu-libvirtd" "users" "video" "wheel"];
   };
-  home-manager = {
-    useGlobalPkgs = true; # Use the NixOS pkgs instead of creating a separate one
-    useUserPackages = true; # Install packages to user profile
-    extraSpecialArgs = {flakeInputs = inputs;}; # Place at Home Manager root level
-    users.ryzengrind = import ./home.nix;
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = true;
+      PermitRootLogin = "yes";
+      X11Forwarding = true;
+      UsePAM = true;
+    };
+    openFirewall = true;
   };
   wsl = {
     enable = true;
     defaultUser = "ryzengrind";
-    wslConf.network.hostname = "nix-pc";
+    wslConf.network.hostname = "pc";
     startMenuLaunchers = true;
     docker-desktop.enable = false;
   };
@@ -155,4 +158,7 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
+  boot.kernelModules = ["usbip-core" "usbip-host" "vhci-hcd"];
+  networking.firewall.enable = true;
+  networking.firewall.allowedTCPPorts = [22 2222];
 }
