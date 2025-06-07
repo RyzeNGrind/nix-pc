@@ -3,44 +3,40 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05"; # Updated to 25.05 to match HM
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05"; # Matched to nixpkgs
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     # Flake-parts for structure
     flake-parts.url = "github:hercules-ci/flake-parts";
-
     # git-hooks.nix for managing pre-commit hooks via Nix
     git-hooks-nix = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     # Other inputs
-    nixos-wsl.url = "github:nix-community/nixos-wsl";
+    nixos-wsl.url = "github:nix-community/NixOS-WSL";
     nix-ld.url = "github:nix-community/nix-ld";
-    opnix.url = "github:brizzbuzz/opnix"; # Assuming nixpkgs follow is desired
+    opnix.url = "github:brizzbuzz/opnix";
     nixos-hardware.url = "github:nixos/nixos-hardware";
+    nix-cfg.url = "path:/home/ryzengrind/nix-cfg"; # Re-enabling nix-cfg input
   };
-
   outputs = inputs @ {
     nixpkgs,
     home-manager,
     nixpkgs-unstable,
     flake-parts,
     git-hooks-nix,
+    opnix,
+    nixos-wsl,
     ...
-  }:
-    flake-parts.lib.mkFlake {inherit inputs;} {
+  }: let
+    flakeParts = flake-parts.lib.mkFlake {inherit inputs;} {
       # `inputs` (no prime) is the full attrset of flake inputs passed to mkFlake
       imports = [
         git-hooks-nix.flakeModule
       ];
-
       systems = ["x86_64-linux"]; # Specify supported systems for perSystem attributes
-
       # Use `inputs'` (with prime) in the signature here, as guided by flake-parts error message
       perSystem = {
         config,
@@ -61,7 +57,9 @@
             statix
             nodePackages.prettier
             # Git and pre-commit
-            git gh
+            git
+            gh
+            pre-commit
             nixpkgs-fmt
             nil
             nix-output-monitor
@@ -72,10 +70,7 @@
             fzf
             zoxide
             direnv
-            # Add procps for 'ps' command needed by your test script
-            procps
           ];
-
           shellHook = ''
             ${config.pre-commit.installationScript}
             echo "NixOS Configuration Development Shell (with git-hooks.nix) activated!"
@@ -86,22 +81,22 @@
             # cat ${./scripts/bin/devShellHook.sh}
           '';
         };
-
         #checks.pre-commit = config.pre-commit.check;
       };
-
       # Global flake attributes (not per-system)
       flake = {
         overlays = import ./overlays {
           inherit nixpkgs-unstable;
-        }; # Top-level inputs
-        nixosConfigurations.nix-pc = nixpkgs.lib.nixosSystem {
+        };
+        nixosConfigurations.pc = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {inherit inputs;}; # Top-level inputs
+          specialArgs = {inherit inputs opnix nixos-wsl;};
           modules = [
             ./configuration.nix
           ];
         };
       };
     };
+  in
+    flakeParts;
 }
