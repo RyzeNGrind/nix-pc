@@ -44,10 +44,10 @@
         inputs',
         ...
       }: {
-        #pre-commit.settings.hooks = import ./git-hooks.nix {inherit pkgs;};
         pre-commit.settings.hooks = import ./git-hooks.nix;
 
-        # Development Shell
+        checks.pre-commit = config.pre-commit.check;
+
         devShells.default = pkgs.mkShell {
           name = "nix-config-dev-shell";
           packages = with pkgs; [
@@ -67,21 +67,53 @@
             starship
             bashInteractive
             bash-completion
+            nix-bash-completions
             fzf
             zoxide
             direnv
+            inputs'.nixpkgs.legacyPackages.nix-fast-build
+            nixVersions.stable
+            nixops-dns
+            nixops_unstable_full
           ];
           shellHook = ''
             ${config.pre-commit.installationScript}
-            echo "NixOS Configuration Development Shell (with git-hooks.nix) activated!"
-            echo "Relevant pre-commit commands:"
-            echo "  pre-commit install                      # (Re-)Install hooks to .git/"
-            echo "  pre-commit run --all-files              # Run all hooks on all files"
-            echo "  pre-commit run <hook_id> --all-files    # Run a specific hook"
-            # cat ${./scripts/bin/devShellHook.sh}
+
+            # Ensure git hooks are properly installed
+            if [ ! -f .git/hooks/pre-commit ]; then
+              echo "Installing git hooks..."
+              pre-commit install
+            fi
+
+            # Aliases for nix-fast-build
+            alias fastnixos='nix-fast-build -f .#nixosConfigurations.pc.config.system.build.toplevel'
+            alias fastcheck='nix-fast-build -f .#checks.x86_64-linux.pre-commit'
+
+            echo "NixOS Configuration Development Shell activated!"
+            echo "Available commands:"
+            echo "  pre-commit run --all-files              # Run all hooks"
+            echo "  pre-commit run <hook_name> --all-files  # Run specific hook"
+            echo "  fastnixos                               # Build NixOS config"
+            echo "  fastcheck                               # Run pre-commit checks"
+
+            # VS Code/Cursor/Void shell integration for bash (WSL2)
+            case "$TERM_PROGRAM" in
+              "vscode")
+                source "/mnt/c/Program Files/Microsoft VS Code/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh" 2>/dev/null || true
+                ;;
+              "cursor")
+                source "/mnt/c/Program Files/cursor/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh" 2>/dev/null || true
+                ;;
+              "void")
+                source "/mnt/c/Program Files/Void/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh" 2>/dev/null || true
+                ;;
+            esac
           '';
         };
-        #checks.pre-commit = config.pre-commit.check;
+
+        checks.helloCheck = pkgs.runCommand "helloCheck" {} ''
+          ${pkgs.hello}/bin/hello > $out
+        '';
       };
       # Global flake attributes (not per-system)
       flake = {
@@ -90,7 +122,7 @@
         };
         nixosConfigurations.pc = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = {inherit inputs opnix nixos-wsl;};
+          specialArgs = {inherit inputs opnix nixos-wsl home-manager;};
           modules = [
             ./configuration.nix
           ];

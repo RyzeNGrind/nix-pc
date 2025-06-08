@@ -7,6 +7,9 @@
     # You can also put home.packages here if you prefer
     # packages = with pkgs; [ ... ];
     enableNixpkgsReleaseCheck = true;
+    sessionVariables = {
+      SSH_AUTH_SOCK = "/mnt/c/Users/RyzeNGrind/.1password/agent.sock";
+    };
   };
 
   programs = {
@@ -15,12 +18,36 @@
       interactiveShellInit = ''
         # Manual starship init for fish
         ${pkgs.starship}/bin/starship init fish | source
+        # VS Code/Cursor/Void shell integration for Fish (WSL2/NixOS)
+        for script in \
+          "/mnt/c/Program Files/Microsoft VS Code/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish" \
+          "/mnt/c/Program Files/cursor/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish" \
+          "/mnt/c/Program Files/Void/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish"
+          if test -f $script
+            source $script
+          end
+        end
+        # Set SSH_AUTH_SOCK for 1Password agent in WSL2
+        set -gx SSH_AUTH_SOCK /mnt/c/Users/RyzeNGrind/.1password/agent.sock
       '';
     };
 
     bash = {
       enable = true;
-      # ... other bash settings
+      shellInit = ''
+        # VS Code/Cursor/Void shell integration for Bash (WSL2/NixOS)
+        for script in \
+          "/mnt/c/Program Files/Microsoft VS Code/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh" \
+          "/mnt/c/Program Files/cursor/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh" \
+          "/mnt/c/Program Files/Void/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+        do
+          if [ -f "$script" ]; then
+            source "$script"
+          fi
+        done
+        # Set SSH_AUTH_SOCK for 1Password agent in WSL2
+        export SSH_AUTH_SOCK=/mnt/c/Users/RyzeNGrind/.1password/agent.sock
+      '';
     };
 
     starship = {
