@@ -16,6 +16,16 @@
     fish = {
       enable = true;
       interactiveShellInit = ''
+        # Robust agent/IDE terminal detection (Cursor, VSCode, Zed, Void, etc.)
+        if test "$TERM_PROGRAM" = "vscode" -o "$TERM_PROGRAM" = "cursor" -o "$TERM_PROGRAM" = "zed" -o "$TERM_PROGRAM" = "void" -o -n "$VSCODE_IPC_HOOK_CLI" -o -n "$CURSOR_AGENT"
+          set -gx STARSHIP_DISABLED 1
+          set -gx PAGER cat
+          set -gx GIT_PAGER cat
+          set -gx LESS "--quit-if-one-screen"
+          set -gx BAT_PAGER cat
+          set -gx MANPAGER cat
+          set -gx SYSTEMD_COLORS 0
+        end
         # Manual starship init for fish
         ${pkgs.starship}/bin/starship init fish | source
         # VS Code/Cursor/Void shell integration for Fish (WSL2/NixOS)
@@ -35,6 +45,16 @@
     bash = {
       enable = true;
       shellInit = ''
+        # Robust agent/IDE terminal detection (Cursor, VSCode, Zed, Void, etc.)
+        if [[ "$TERM_PROGRAM" =~ (vscode|cursor|zed|void) ]] || [[ -n "$VSCODE_IPC_HOOK_CLI" ]] || [[ -n "$CURSOR_AGENT" ]]; then
+          export STARSHIP_DISABLED=1
+          export PAGER=cat
+          export GIT_PAGER=cat
+          export LESS="--quit-if-one-screen"
+          export BAT_PAGER=cat
+          export MANPAGER=cat
+          export SYSTEMD_COLORS=0
+        fi
         # VS Code/Cursor/Void shell integration for Bash (WSL2/NixOS)
         for script in \
           "/mnt/c/Program Files/Microsoft VS Code/resources/app/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh" \
