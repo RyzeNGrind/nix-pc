@@ -19,8 +19,9 @@
     nix-ld.url = "github:nix-community/nix-ld";
     opnix.url = "github:brizzbuzz/opnix";
     nixos-hardware.url = "github:nixos/nixos-hardware";
-    nix-cfg.url = "path:/home/ryzengrind/nix-cfg"; # Re-enabling nix-cfg input
+    #nix-cfg.url = "path:/home/ryzengrind/nix-cfg";     # TEMPORARILY COMMENTED OUT - might be causing the evaluation failure
   };
+
   outputs = inputs @ {
     nixpkgs,
     home-manager,

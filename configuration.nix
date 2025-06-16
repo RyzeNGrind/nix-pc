@@ -6,7 +6,7 @@
 {
   config,
   pkgs,
-  #lib,
+  lib,
   inputs,
   opnix,
   nixos-wsl,
@@ -24,7 +24,6 @@ in {
     nixos-wsl.nixosModules.default # Ensure WSL module is primary for WSL settings
     home-manager.nixosModules.home-manager
   ];
-
   boot = {
     kernelModules = ["usbip-core" "usbip-host" "vhci-hcd"];
     loader = {
@@ -32,10 +31,8 @@ in {
       systemd-boot.enable = false; # Disable for WSL
     };
   };
-
   # Disable documentation options that might cause infinite recursion
   documentation.nixos.includeAllModules = false;
-
   environment = {
     pathsToLink = ["/share/bash-completion"];
     shellAliases = {
@@ -93,58 +90,70 @@ in {
       mtr
     ];
   };
-
   i18n.defaultLocale = "en_CA.UTF-8";
-
+  # Fix the hosts file conflict
+  environment.etc.hosts.source = lib.mkForce (pkgs.writeText "hosts" ''
+    127.0.0.1 localhost
+    ::1 localhost
+    127.0.1.1 pc.lan pc
+  '');
   # Consolidated networking configuration
   networking = {
+    # This option is now IGNORED because we define per-interface settings.
+    # useDHCP = true;
     useNetworkd = true;
-    useDHCP = false;
     hostName = "pc";
-
-    # Define VLAN interfaces
+    # This creates the vlanX@eth0 kernel devices.
     vlans = {
       "vlan5" = {
         id = 5;
-        interface = "eth2";
+        interface = "eth0";
       };
       "vlan10" = {
         id = 10;
-        interface = "eth2";
+        interface = "eth0";
       };
       "vlan20" = {
         id = 20;
-        interface = "eth2";
+        interface = "eth0";
       };
       "vlan25" = {
         id = 25;
-        interface = "eth2";
+        interface = "eth0";
       };
     };
-
+    # This configures each interface with its unique MAC and enables DHCP.
+    interfaces = {
+      # Add eth0 configuration to ensure base interface is up
+      eth0 = {
+        useDHCP = true;
+      };
+      vlan5 = {
+        useDHCP = true;
+        # This assigns the correct MAC address for your static DHCP reservation.
+        macAddress = "04:33:c2:b6:7b:91";
+      };
+      vlan10 = {
+        useDHCP = true;
+        macAddress = "04:33:c2:b6:7b:92";
+      };
+      vlan20 = {
+        useDHCP = true;
+        macAddress = "04:33:c2:b6:7b:93";
+      };
+      vlan25 = {
+        useDHCP = true;
+        macAddress = "04:33:c2:b6:7b:94";
+      };
+    };
     # Firewall configuration
     firewall = {
       enable = true;
       allowedTCPPorts = [22];
-      # Allow VPN traffic
+      # Trust VPN interfaces for high availability
       trustedInterfaces = ["tailscale0" "zt0"];
     };
-
-    # Custom hosts entries - DISABLED due to WSL conflict
-    # extraHosts = ''
-    #   # Local network mappings
-    #   192.168.1.32    pc.lan pc
-    #   192.168.5.32    pc.dev pc-dev
-    #   192.168.10.32   pc.cluster.private pc-priv
-    #   192.168.20.32   pc.cluster.public pc-pub
-    #   192.168.25.32   pc.vm pc-vm
-    #
-    #   # VPN network mappings
-    #   100.82.226.11   pc.tailce65.ts.net pc-ts
-    #   10.147.17.231   pc.zerotier pc-zt
-    # '';
   };
-
   nix.settings = {
     experimental-features = [
       "auto-allocate-uids"
@@ -165,7 +174,6 @@ in {
     # Fixed: Use proper trusted-users setting instead of deprecated ones
     trusted-users = ["root" "@wheel" "ryzengrind"];
   };
-
   # Set up proper nixpkgs configuration with overlays
   nixpkgs = {
     config = {
@@ -182,7 +190,6 @@ in {
       })
     ];
   };
-
   programs = {
     bash = {
       completion.enable = true;
@@ -204,7 +211,6 @@ in {
         echo "Bash login shell initialized."
       '';
     };
-
     fish = {
       enable = true;
       interactiveShellInit = ''
@@ -225,9 +231,7 @@ in {
         echo "Fish login shell initialized."
       '';
     };
-
     nix-ld.enable = true; # libraries can be added if specific unresolvable linking issues arise
-
     starship = {
       enable = true;
       settings = {
@@ -242,13 +246,11 @@ in {
       };
     };
   };
-
   security.sudo = {
     enable = true;
     execWheelOnly = true; # Optional security measure to ensure only wheel members have passwordless sudo
     wheelNeedsPassword = false;
   };
-
   services = {
     openssh = {
       enable = true;
@@ -260,19 +262,16 @@ in {
         X11Forwarding = true;
       };
     };
-
     # Tailscale service configuration (instead of networking.tailscale)
     tailscale = {
       enable = true;
       openFirewall = true;
     };
-
     # ZeroTier service
     zerotierone = {
       enable = true;
       joinNetworks = ["9f77fc393e47072a"]; # Your ZeroTier network ID
     };
-
     # xserver settings typically not needed for WSLg, which handles GUI apps.
     xserver = {
       desktopManager.gnome.enable = false; # Adjust based on your GUI needs
@@ -280,7 +279,6 @@ in {
       enable = false; # Typically disabled for WSL, adjust based on your setup
     };
   };
-
   system = {
     autoUpgrade = {
       # Automatic upgrades can be tricky in WSL; ensure this behaves as expected or disable.
@@ -293,165 +291,26 @@ in {
     stateVersion = "25.05"; # Did you read the comment?
     configurationRevision = inputs.self.rev or "staging to dev"; # Simplified using 'or' operator
   };
-
-  # Consolidated systemd configuration
+  # CONSOLIDATED systemd configuration - FIXED: Single systemd block
   systemd = {
-    # Enable systemd-networkd
-    network = {
-      enable = true;
-
-      # systemd-networkd configuration
-      networks = {
-        # Main physical interface (USB-C Dell Dock) - FIXED
-        "10-eth2" = {
-          matchConfig.Name = "eth2";
-          DHCP = "yes";
-          vlan = ["vlan5" "vlan10" "vlan20" "vlan25"];
-          linkConfig = {
-            RequiredForOnline = "routable"; # More flexible than default
-          };
-          dhcpV4Config = {
-            ClientIdentifier = "mac";
-            RouteMetric = 100; # Lower priority than VLANs
-          };
-        };
-
-        # VLAN 5 - Development network - FIXED
-        "25-vlan5" = {
-          matchConfig.Name = "vlan5";
-          DHCP = "yes";
-          linkConfig = {
-            MACAddress = "04:33:c2:b6:7b:91";
-            RequiredForOnline = "routable";
-          };
-          dhcpV4Config = {
-            ClientIdentifier = "mac";
-            Hostname = "pc-dev";
-            RouteMetric = 50;
-          };
-        };
-
-        # VLAN 10 - Cluster Private network - FIXED
-        "25-vlan10" = {
-          matchConfig.Name = "vlan10";
-          DHCP = "yes";
-          linkConfig = {
-            MACAddress = "04:33:c2:b6:7b:92";
-            RequiredForOnline = "routable";
-          };
-          dhcpV4Config = {
-            ClientIdentifier = "mac";
-            Hostname = "pc-priv";
-            RouteMetric = 60;
-          };
-        };
-
-        # VLAN 20 - Cluster Public network - FIXED
-        "25-vlan20" = {
-          matchConfig.Name = "vlan20";
-          DHCP = "yes";
-          linkConfig = {
-            MACAddress = "04:33:c2:b6:7b:93";
-            RequiredForOnline = "routable";
-          };
-          dhcpV4Config = {
-            ClientIdentifier = "mac";
-            Hostname = "pc-pub";
-            RouteMetric = 70;
-          };
-        };
-
-        # VLAN 25 - VM network - FIXED
-        "25-vlan25" = {
-          matchConfig.Name = "vlan25";
-          DHCP = "yes";
-          linkConfig = {
-            MACAddress = "04:33:c2:b6:7b:94";
-            RequiredForOnline = "no"; # VM network not required for online
-          };
-          dhcpV4Config = {
-            ClientIdentifier = "mac";
-            Hostname = "pc-vm";
-            RouteMetric = 80;
-          };
-        };
-
-        # ZeroTier interface - FIXED
-        "30-zt0" = {
-          matchConfig.Name = "zt*";
-          DHCP = "no";
-          linkConfig = {
-            MACAddress = "fe:8a:e6:78:32:5c";
-            RequiredForOnline = "no"; # VPN not required for online
-          };
-        };
-
-        # Tailscale interface - FIXED
-        "30-tailscale0" = {
-          matchConfig.Name = "tailscale*";
-          DHCP = "no";
-          linkConfig = {
-            MACAddress = "00:15:5d:ef:04:0e";
-            RequiredForOnline = "no"; # VPN not required for online
-          };
-        };
-
-        # Backup physical interface (built-in ethernet) - FIXED
-        "15-eth1" = {
-          matchConfig.Name = "eth1";
-          DHCP = "yes";
-          dhcpV4Config = {
-            ClientIdentifier = "mac";
-            Hostname = "pc-backup";
-            RouteMetric = 200; # Lower priority backup
-          };
-          linkConfig.RequiredForOnline = "no"; # Backup not required
-        };
-      };
-    };
-
-    # systemd services configuration - FIXED
+    # Fix the networkd wait-online timeout by disabling it or making it less strict
     services = {
       "autovt@tty1".enable = false; # Disable autovt for WSL
       "getty@tty1".enable = false; # Disable getty for WSL
       NetworkManager-wait-online.enable = false; # Not using NetworkManager
 
-      # FIXED: Configure systemd-networkd-wait-online properly
-      systemd-networkd-wait-online = {
-        serviceConfig = {
-          ExecStart = [
-            "" # Clear the default ExecStart
-            "${pkgs.systemd}/lib/systemd/systemd-networkd-wait-online --timeout=60 --interface=eth2 --ignore=tailscale0 --ignore=zt0 --ignore=vlan25"
-          ];
-        };
-      };
+      # MAIN FIX: Disable systemd-networkd-wait-online entirely for WSL
+      systemd-networkd-wait-online.enable = lib.mkForce false;
 
-      # FIXED: ZeroTier service with proper setup
-      zerotierone = {
-        after = ["network-online.target"];
-        wants = ["network-online.target"];
-        preStart = ''
-          mkdir -p /var/lib/zerotier-one
-          chmod 700 /var/lib/zerotier-one
-        '';
-        serviceConfig = {
-          Restart = "on-failure";
-          RestartSec = "5s";
-          # Add proper user/group if needed
-          User = "root";
-          Group = "root";
-        };
-      };
-
-      # FIXED: Tailscale service with better dependencies
-      tailscaled = {
-        after = ["network-online.target"];
-        wants = ["network-online.target"];
-        serviceConfig = {
-          Restart = "on-failure";
-          RestartSec = "5s";
-        };
-      };
+      # Alternative fix if you want to keep it but make it less strict:
+      # systemd-networkd-wait-online = {
+      #   serviceConfig = {
+      #     ExecStart = lib.mkForce [
+      #       "" # Clear the existing ExecStart
+      #       "${pkgs.systemd}/lib/systemd/systemd-networkd-wait-online --timeout=10 --any --ignore=vlan5 --ignore=vlan10 --ignore=vlan20 --ignore=vlan25 --ignore=tailscale0 --ignore=zt0"
+      #     ];
+      #   };
+      # };
 
       # Service to set VPN interface MAC addresses - IMPROVED
       set-vpn-macs = {
@@ -459,7 +318,6 @@ in {
         after = ["network-pre.target"];
         before = ["network.target"];
         wantedBy = ["multi-user.target"];
-
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -467,7 +325,6 @@ in {
             # Wait for interfaces to appear with timeout
             timeout=30
             count=0
-
             while [ $count -lt $timeout ]; do
               # Check if at least one interface exists
               if ${pkgs.iproute2}/bin/ip link show zt0 &>/dev/null || ${pkgs.iproute2}/bin/ip link show tailscale0 &>/dev/null; then
@@ -476,13 +333,11 @@ in {
               sleep 1
               count=$((count + 1))
             done
-
             # Set ZeroTier MAC if interface exists
             if ${pkgs.iproute2}/bin/ip link show zt0 &>/dev/null; then
               echo "Setting ZeroTier MAC address..."
               ${pkgs.iproute2}/bin/ip link set dev zt0 address fe:8a:e6:78:32:5c || echo "Failed to set ZeroTier MAC"
             fi
-
             # Set Tailscale MAC if interface exists
             if ${pkgs.iproute2}/bin/ip link show tailscale0 &>/dev/null; then
               echo "Setting Tailscale MAC address..."
@@ -491,11 +346,79 @@ in {
           '';
         };
       };
+      # Add ZeroTier service override
+      zerotierone = {
+        serviceConfig = {
+          Restart = lib.mkForce "on-failure";
+        };
+      };
+    };
+    # Additional systemd-networkd configuration to handle VLANs better
+    network = {
+      enable = true;
+      networks = {
+        # Base ethernet interface
+        "10-eth0" = {
+          matchConfig.Name = "eth0";
+          dhcpV4Config.RouteMetric = 100;
+          DHCP = "yes";
+        };
+        # VLAN configurations with higher metrics so they don't interfere with boot
+        "20-vlan5" = {
+          matchConfig.Name = "vlan5";
+          dhcpV4Config.RouteMetric = 1005;
+          DHCP = "yes";
+        };
+        "21-vlan10" = {
+          matchConfig.Name = "vlan10";
+          dhcpV4Config.RouteMetric = 1010;
+          DHCP = "yes";
+        };
+        "22-vlan20" = {
+          matchConfig.Name = "vlan20";
+          dhcpV4Config.RouteMetric = 1020;
+          DHCP = "yes";
+        };
+        "23-vlan25" = {
+          matchConfig.Name = "vlan25";
+          dhcpV4Config.RouteMetric = 1025;
+          DHCP = "yes";
+        };
+      };
+      netdevs = {
+        # Define VLANs as netdevs for better control
+        "vlan5" = {
+          netdevConfig = {
+            Kind = "vlan";
+            Name = "vlan5";
+          };
+          vlanConfig.Id = 5;
+        };
+        "vlan10" = {
+          netdevConfig = {
+            Kind = "vlan";
+            Name = "vlan10";
+          };
+          vlanConfig.Id = 10;
+        };
+        "vlan20" = {
+          netdevConfig = {
+            Kind = "vlan";
+            Name = "vlan20";
+          };
+          vlanConfig.Id = 20;
+        };
+        "vlan25" = {
+          netdevConfig = {
+            Kind = "vlan";
+            Name = "vlan25";
+          };
+          vlanConfig.Id = 25;
+        };
+      };
     };
   };
-
   time.timeZone = "America/Toronto";
-
   users = {
     groups.docker.members = [config.wsl.defaultUser];
     users.ryzengrind = {
@@ -509,14 +432,12 @@ in {
       shell = pkgs.fish;
     };
   };
-
   virtualisation.docker = {
     autoPrune.enable = true;
     enable = true;
     # enableOnBoot = true; # In WSL, services are usually started by systemd when the distro launches.
   };
-
-  # FIXED: WSL configuration with proper network settings
+  # WSL configuration with proper network settings
   wsl = {
     defaultUser = "ryzengrind";
     docker-desktop.enable = true; # Make sure this integrates well with virtualisation.docker.enable
@@ -541,30 +462,12 @@ in {
         register = true;
       };
       network = {
-        generateHosts = false; # FIXED: Disabled to avoid conflicts
-        generateResolvConf = true;
+        generateHosts = false; # Disabled to avoid conflicts
+        generateResolvConf = false; # FIX: Let systemd-resolved manage DNS
         hostname = "pc";
       };
     };
   };
-
-  # Optional: Add custom hosts via environment if needed
-  environment.etc."hosts".text = ''
-    127.0.0.1   localhost
-    ::1         localhost ip6-localhost ip6-loopback
-
-    # Custom host entries (since networking.extraHosts is disabled)
-    192.168.1.32    pc.lan pc
-    192.168.5.32    pc.dev pc-dev
-    192.168.10.32   pc.cluster.private pc-priv
-    192.168.20.32   pc.cluster.public pc-pub
-    192.168.25.32   pc.vm pc-vm
-
-    # VPN network mappings
-    100.82.226.11   pc.tailce65.ts.net pc-ts
-    10.147.17.231   pc.zerotier pc-zt
-  '';
-
   #  systemd.services.wsl-vpnkit = {
   #    enable = true;
   #    description = "wsl-vpnkit";
