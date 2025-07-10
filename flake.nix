@@ -73,12 +73,20 @@
           ];
           shellHook = ''
             ${config.pre-commit.installationScript}
-            echo "NixOS Configuration Development Shell (with git-hooks.nix) activated!"
-            echo "Relevant pre-commit commands:"
-            echo "  pre-commit install                      # (Re-)Install hooks to .git/"
-            echo "  pre-commit run --all-files              # Run all hooks on all files"
-            echo "  pre-commit run <hook_id> --all-files    # Run a specific hook"
-            # cat ${./scripts/bin/devShellHook.sh}
+            # Agentic aliases for fast Nix workflows
+            if [ -n "$BASH_VERSION" ]; then
+              alias nfc='nix run github:Mic92/nix-fast-build -- --flake ".#checks.$(nix eval --impure --raw --expr "builtins.currentSystem")"'
+              alias nfco='nix flake check'
+              alias fastcheck='nix run github:Mic92/nix-fast-build -- --flake ".#checks.$(nix eval --impure --raw --expr "builtins.currentSystem")"'
+              alias fastdev='nix run github:Mic92/nix-fast-build -- --flake ".#devShells.$(nix eval --impure --raw --expr "builtins.currentSystem").default"'
+            fi
+            if [ -n "$FISH_VERSION" ]; then
+              alias nfc "nix run github:Mic92/nix-fast-build -- --flake .#checks.(nix eval --impure --raw --expr 'builtins.currentSystem')"
+              alias nfco "nix flake check"
+              alias fastcheck "nix run github:Mic92/nix-fast-build -- --flake .#checks.(nix eval --impure --raw --expr 'builtins.currentSystem')"
+              alias fastdev "nix run github:Mic92/nix-fast-build -- --flake .#devShells.(nix eval --impure --raw --expr 'builtins.currentSystem').default"
+            end
+            echo "[nix-pc] Aliases: nfc (fast check), nfco (flake check), fastcheck, fastdev loaded."
           '';
         };
         #checks.pre-commit = config.pre-commit.check;
